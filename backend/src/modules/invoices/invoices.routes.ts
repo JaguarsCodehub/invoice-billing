@@ -73,8 +73,8 @@ router.post("/", async (req: Request, res: Response) => {
         include: { items: true, party: true }
       });
 
-      // If TAX_INVOICE and status changes to SENT/PARTIAL/PAID, deduct stock
-      if (data.type === 'TAX_INVOICE' && ['SENT', 'PARTIAL', 'PAID'].includes(data.status)) {
+      // If TAX_INVOICE and status changes to Accepted, deduct stock
+      if (data.type === 'TAX_INVOICE' && isInvoiceAccepted(data.status)) {
         const warehouse = await tx.warehouse.findFirst({
           where: { businessId: user.businessId, isDefault: true }
         }) || await tx.warehouse.create({
@@ -154,6 +154,9 @@ router.get("/:id", async (req: Request, res: Response) => {
   }
 });
 
+// Helper to check if invoice status impacts stock
+const isInvoiceAccepted = (status: string) => ['SENT', 'PARTIAL', 'PAID'].includes(status);
+
 // Update invoice
 router.put("/:id", async (req: Request, res: Response) => {
   try {
@@ -162,7 +165,8 @@ router.put("/:id", async (req: Request, res: Response) => {
     const data = invoiceSchema.parse(req.body);
 
     const existing = await prisma.invoice.findFirst({
-      where: { id: id as string, businessId: user.businessId }
+      where: { id: id as string, businessId: user.businessId },
+      include: { items: true }
     });
 
     if (!existing) return res.status(404).json({ error: "Invoice not found" });
@@ -183,12 +187,12 @@ router.put("/:id", async (req: Request, res: Response) => {
     const total = subtotal + taxAmount - data.discount;
 
     const result = await prisma.$transaction(async (tx: any) => {
-      // Delete old items
+      // 1. Delete old items
       await tx.invoiceItem.deleteMany({
         where: { invoiceId: id as string }
       });
 
-      // Update invoice and create new items
+      // 2. Update invoice and create new items
       const updated = await tx.invoice.update({
         where: { id: id as string },
         data: {
@@ -209,6 +213,108 @@ router.put("/:id", async (req: Request, res: Response) => {
         },
         include: { items: true, party: true }
       });
+
+      // 3. Reconcile Stock Entries
+      // Delete old stock entries for this invoice
+      await tx.stockEntry.deleteMany({
+        where: { businessId: user.businessId, reference: existing.number }
+      });
+
+      // If new status is Accepted and type is TAX_INVOICE, create new entries
+      if (data.type === 'TAX_INVOICE' && isInvoiceAccepted(data.status)) {
+        const warehouse = await tx.warehouse.findFirst({
+          where: { businessId: user.businessId, isDefault: true }
+        }) || await tx.warehouse.create({
+            data: { name: "Main", isDefault: true, businessId: user.businessId }
+        });
+
+        for (const item of computedItems) {
+          if (item.productId) {
+            await tx.stockEntry.create({
+              data: {
+                businessId: user.businessId,
+                productId: item.productId,
+                warehouseId: warehouse.id,
+                type: "OUT",
+                qty: item.qty,
+                reference: updated.number,
+                notes: `Sold via Invoice ${updated.number} (Updated)`
+              }
+            });
+          }
+        }
+      }
+
+      return updated;
+    });
+
+    res.json(result);
+  } catch (error: any) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: (error as any).errors });
+    }
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Update Invoice Status
+router.patch("/:id/status", async (req: Request, res: Response) => {
+  try {
+    const user = req.user as any;
+    const { id } = req.params;
+    const { status } = z.object({ 
+      status: z.enum(["DRAFT", "SENT", "PARTIAL", "PAID", "OVERDUE", "CANCELLED"]) 
+    }).parse(req.body);
+
+    const existing = await prisma.invoice.findFirst({
+      where: { id: id as string, businessId: user.businessId },
+      include: { items: true }
+    });
+
+    if (!existing) return res.status(404).json({ error: "Invoice not found" });
+
+    const result = await prisma.$transaction(async (tx) => {
+      const updated = await tx.invoice.update({
+        where: { id: id as string },
+        data: { status },
+        include: { items: true, party: true }
+      });
+
+      // Stock Reconciliation
+      const wasAccepted = isInvoiceAccepted(existing.status);
+      const isAccepted = isInvoiceAccepted(status);
+
+      if (existing.type === 'TAX_INVOICE') {
+        if (!wasAccepted && isAccepted) {
+          // Add stock entries
+          const warehouse = await tx.warehouse.findFirst({
+            where: { businessId: user.businessId, isDefault: true }
+          }) || await tx.warehouse.create({
+              data: { name: "Main", isDefault: true, businessId: user.businessId }
+          });
+
+          for (const item of updated.items) {
+            if (item.productId) {
+              await tx.stockEntry.create({
+                data: {
+                  businessId: user.businessId,
+                  productId: item.productId,
+                  warehouseId: warehouse.id,
+                  type: "OUT",
+                  qty: item.qty as any,
+                  reference: updated.number,
+                  notes: `Sold via Invoice ${updated.number} (Status Change)`
+                }
+              });
+            }
+          }
+        } else if (wasAccepted && !isAccepted) {
+          // Remove stock entries
+          await tx.stockEntry.deleteMany({
+            where: { businessId: user.businessId, reference: updated.number }
+          });
+        }
+      }
 
       return updated;
     });

@@ -2,10 +2,12 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import { 
   Table, 
   TableBody, 
@@ -21,18 +23,42 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+  DropdownMenuPortal,
 } from "@/components/ui/dropdown-menu";
-import { Plus, Search, Loader2, MoreVertical, FileSignature, CopyCheck } from "lucide-react";
+import { Plus, Search, Loader2, MoreVertical, FileSignature, CopyCheck, Edit, CheckCircle2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import dayjs from "dayjs";
-
+import { useRouter } from "next/navigation";
 export default function QuotationsPage() {
+  const router = useRouter();
+  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
 
   const { data: quotations, isLoading } = useQuery({
     queryKey: ['quotations'],
     queryFn: async () => await apiClient.get('/quotations')
   });
+
+  const updateStatus = useMutation({
+    mutationFn: ({ id, status }: { id: string, status: string }) => 
+      apiClient.patch(`/quotations/${id}/status`, { status }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['quotations'] });
+      toast.success("Status updated successfully");
+    },
+    onError: () => toast.error("Failed to update status")
+  });
+
+  const statuses = [
+    { label: "Draft", value: "DRAFT" },
+    { label: "Sent", value: "SENT" },
+    { label: "Accepted", value: "ACCEPTED" },
+    { label: "Rejected", value: "REJECTED" },
+    { label: "Invoiced", value: "INVOICED" },
+  ];
 
   const filteredQuotations = quotations?.filter((q: any) => 
     q.number.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -134,15 +160,31 @@ export default function QuotationsPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem>
-                          <FileSignature className="mr-2 h-4 w-4" />
-                          View Details
-                        </DropdownMenuItem>
-                        <DropdownMenuItem disabled={q.status === 'ACCEPTED'}>
-                          <CopyCheck className="mr-2 h-4 w-4" />
-                          Convert to Invoice
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
+                         <DropdownMenuItem onClick={() => router.push(`/quotations/${q.id}/edit`)}>
+                           <Edit className="mr-2 h-4 w-4" />
+                           Edit Quotation
+                         </DropdownMenuItem>
+                         <DropdownMenuSeparator />
+                         <DropdownMenuSub>
+                           <DropdownMenuSubTrigger>
+                             <CheckCircle2 className="mr-2 h-4 w-4" />
+                             Change Status
+                           </DropdownMenuSubTrigger>
+                           <DropdownMenuPortal>
+                             <DropdownMenuSubContent>
+                               {statuses.map((status) => (
+                                 <DropdownMenuItem 
+                                   key={status.value}
+                                   onClick={() => updateStatus.mutate({ id: q.id, status: status.value })}
+                                   className={cn(q.status === status.value && "bg-muted font-bold")}
+                                 >
+                                   {status.label}
+                                 </DropdownMenuItem>
+                               ))}
+                             </DropdownMenuSubContent>
+                           </DropdownMenuPortal>
+                         </DropdownMenuSub>
+                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
                 </TableRow>

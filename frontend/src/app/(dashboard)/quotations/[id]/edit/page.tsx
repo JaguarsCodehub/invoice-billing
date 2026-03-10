@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
@@ -30,14 +30,20 @@ import Link from "next/link";
 import dayjs from "dayjs";
 import { cn } from "@/lib/utils";
 
-export default function CreateQuotationPage() {
+export default function EditQuotationPage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const quotationId = params.id;
 
   // Layout control
   const [showEditor, setShowEditor] = useState(true);
 
   // Fetch related data
+  const { data: quotation, isLoading: quotationLoading } = useQuery({
+    queryKey: ['quotation', quotationId],
+    queryFn: async () => await apiClient.get(`/quotations/${quotationId}`)
+  });
+
   const { data: business } = useQuery({
     queryKey: ['business'],
     queryFn: async () => await apiClient.get('/business')
@@ -55,12 +61,15 @@ export default function CreateQuotationPage() {
 
   // Modal states
   const [isCustomerOpen, setIsCustomerOpen] = useState(false);
+  const [isProductOpen, setIsProductOpen] = useState(false);
+
   const [customerData, setCustomerData] = useState({ name: "", email: "", phone: "", type: "CUSTOMER" });
+  const [productData, setProductData] = useState({ name: "", sku: "", category: "General", unit: "PCS", purchasePrice: 0, salePrice: 0, stock: 0 });
 
   // Form state
   const [formData, setFormData] = useState({
     partyId: "",
-    number: `EST-${Date.now().toString().slice(-6)}`,
+    number: "",
     date: dayjs().format("YYYY-MM-DD"),
     validUntil: dayjs().add(15, 'day').format("YYYY-MM-DD"),
     time: dayjs().format("HH:mm"),
@@ -84,20 +93,58 @@ export default function CreateQuotationPage() {
     }
   ]);
 
+  // Sync with existing quotation data
+  useEffect(() => {
+    if (quotation) {
+      setFormData({
+        partyId: quotation.partyId || "",
+        number: quotation.number || "",
+        date: quotation.date ? dayjs(quotation.date).format("YYYY-MM-DD") : dayjs().format("YYYY-MM-DD"),
+        validUntil: quotation.validUntil ? dayjs(quotation.validUntil).format("YYYY-MM-DD") : dayjs().add(15, 'day').format("YYYY-MM-DD"),
+        time: quotation.time || dayjs().format("HH:mm"),
+        status: quotation.status || "DRAFT",
+        discount: Number(quotation.discount) || 0,
+        notes: quotation.notes || "Estimate valid for 15 days.",
+        termsAndConditions: quotation.termsAndConditions || "1. Quotation is valid for 15 days.\n2. Prices are subject to change based on market conditions.",
+      });
+
+      if (quotation.items && quotation.items.length > 0) {
+        setItems(quotation.items.map((item: any) => {
+          const sub = (Number(item.qty) * Number(item.unitPrice)) - Number(item.discount);
+          const taxP = sub > 0 ? Math.round((Number(item.taxAmount) / sub) * 100) : 0;
+          const discP = Number(item.unitPrice) > 0 ? Number(((Number(item.discount) / Number(item.unitPrice)) * 100).toFixed(2)) : 0;
+          
+          return {
+            productId: item.productId || "custom",
+            description: item.description || "",
+            hsnSac: item.hsnSac || "",
+            qty: Number(item.qty) || 1,
+            unit: item.unit || "PCS",
+            unitPrice: Number(item.unitPrice) || 0,
+            taxPercent: taxP,
+            discount: Number(item.discount) || 0,
+            discountPercent: discP
+          };
+        }));
+      }
+    }
+  }, [quotation]);
+
   // Sync party details when partyId changes
   const selectedParty = useMemo(() => {
     return parties?.find((p: any) => p.id === formData.partyId);
   }, [parties, formData.partyId]);
 
-  const createQuotationMutation = useMutation({
-    mutationFn: (newQuote: any) => apiClient.post("/quotations", newQuote),
+  const updateQuotationMutation = useMutation({
+    mutationFn: (updatedQuote: any) => apiClient.put(`/quotations/${quotationId}`, updatedQuote),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['quotations'] });
-      toast.success("Quotation created successfully");
+      queryClient.invalidateQueries({ queryKey: ['quotation', quotationId] });
+      toast.success("Quotation updated successfully");
       router.push("/quotations");
     },
     onError: (error: any) => {
-      const msg = Array.isArray(error?.error) ? error.error[0]?.message : error?.error || "Failed to create quotation";
+      const msg = Array.isArray(error?.error) ? error.error[0]?.message : error?.error || "Failed to update quotation";
       toast.error(msg);
     }
   });
@@ -114,9 +161,30 @@ export default function CreateQuotationPage() {
     onError: () => toast.error("Failed to create customer")
   });
 
+  const createProduct = useMutation({
+    mutationFn: (newProd: any) => apiClient.post("/products", newProd),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      toast.success("Product added successfully");
+      setIsProductOpen(false);
+      setProductData({ name: "", sku: "", category: "General", unit: "PCS", purchasePrice: 0, salePrice: 0, stock: 0 });
+    },
+    onError: () => toast.error("Failed to create product")
+  });
+
   const handleCreateCustomer = (e: React.FormEvent) => {
     e.preventDefault();
     createParty.mutate(customerData);
+  };
+
+  const handleCreateProduct = (e: React.FormEvent) => {
+    e.preventDefault();
+    createProduct.mutate({
+      ...productData,
+      purchasePrice: Number(productData.purchasePrice),
+      salePrice: Number(productData.salePrice),
+      stock: Number(productData.stock)
+    });
   };
 
   const handleItemChange = (index: number, field: string, value: any) => {
@@ -229,10 +297,18 @@ export default function CreateQuotationPage() {
       })
     };
 
-    createQuotationMutation.mutate(payload);
+    updateQuotationMutation.mutate(payload);
   };
 
   const customers = parties?.filter((p: any) => p.type === 'CUSTOMER' || p.type === 'BOTH') || [];
+
+  if (quotationLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)] overflow-hidden">
@@ -244,7 +320,7 @@ export default function CreateQuotationPage() {
               <ArrowLeft className="h-5 w-5" />
             </Button>
           </Link>
-          <h1 className="text-xl font-bold tracking-tight">Create Quotation {formData.number}</h1>
+          <h1 className="text-xl font-bold tracking-tight">Edit Quotation {formData.number}</h1>
         </div>
         <div className="flex items-center gap-3">
           <Button 
@@ -265,9 +341,9 @@ export default function CreateQuotationPage() {
             variant="outline" 
             size="sm"
             onClick={(e) => handleSave(e, formData.status)}
-            disabled={createQuotationMutation.isPending}
+            disabled={updateQuotationMutation.isPending}
           >
-            <Save className="mr-2 h-4 w-4" /> Save Quotation
+            <Save className="mr-2 h-4 w-4" /> Update Quotation
           </Button>
         </div>
       </div>

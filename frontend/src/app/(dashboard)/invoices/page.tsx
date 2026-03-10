@@ -2,10 +2,12 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import { 
   Table, 
   TableBody, 
@@ -21,20 +23,43 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+  DropdownMenuPortal,
 } from "@/components/ui/dropdown-menu";
-import { Plus, Search, Loader2, MoreVertical, FileText, Download, Printer, Edit } from "lucide-react";
+import { Plus, Search, Loader2, MoreVertical, FileText, Download, Printer, Edit, CheckCircle2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import dayjs from "dayjs";
 import { useRouter } from "next/navigation";
 
 export default function InvoicesPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
 
   const { data: invoices, isLoading } = useQuery({
     queryKey: ['invoices'],
     queryFn: async () => await apiClient.get('/invoices')
   });
+
+  const updateStatus = useMutation({
+    mutationFn: ({ id, status }: { id: string, status: string }) => 
+      apiClient.patch(`/invoices/${id}/status`, { status }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      toast.success("Status updated successfully");
+    },
+    onError: () => toast.error("Failed to update status")
+  });
+
+  const statuses = [
+    { label: "Draft", value: "DRAFT" },
+    { label: "Sent", value: "SENT" },
+    { label: "Paid", value: "PAID" },
+    { label: "Partial", value: "PARTIAL" },
+    { label: "Overdue", value: "OVERDUE" },
+  ];
 
   const filteredInvoices = invoices?.filter((inv: any) => 
     inv.number.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -154,6 +179,26 @@ export default function InvoicesPage() {
                           <Printer className="mr-2 h-4 w-4" />
                           Print
                         </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuSub>
+                          <DropdownMenuSubTrigger>
+                            <CheckCircle2 className="mr-2 h-4 w-4" />
+                            Change Status
+                          </DropdownMenuSubTrigger>
+                          <DropdownMenuPortal>
+                            <DropdownMenuSubContent>
+                              {statuses.map((status) => (
+                                <DropdownMenuItem 
+                                  key={status.value}
+                                  onClick={() => updateStatus.mutate({ id: inv.id, status: status.value })}
+                                  className={cn(inv.status === status.value && "bg-muted font-bold")}
+                                >
+                                  {status.label}
+                                </DropdownMenuItem>
+                              ))}
+                            </DropdownMenuSubContent>
+                          </DropdownMenuPortal>
+                        </DropdownMenuSub>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>

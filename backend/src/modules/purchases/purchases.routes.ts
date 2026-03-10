@@ -31,7 +31,7 @@ const purchaseInvoiceSchema = z.object({
   number: z.string(),
   date: z.string(),
   dueDate: z.string().optional().nullable(),
-  status: z.enum(["DRAFT", "RECEIVED", "PARTIAL", "PAID", "OVERDUE"]).default("DRAFT"),
+  status: z.enum(["DRAFT", "PENDING", "RECEIVED", "PARTIAL", "PAID", "OVERDUE"]).default("DRAFT"),
   discount: z.number().default(0),
   notes: z.string().optional().nullable(),
   items: z.array(purchaseItemSchema).min(1),
@@ -121,8 +121,8 @@ router.post("/invoices", async (req: Request, res: Response) => {
         include: { items: true, party: true }
       });
 
-      // If RECEIVED/PARTIAL/PAID, add stock
-      if (['RECEIVED', 'PARTIAL', 'PAID'].includes(data.status)) {
+      // If status is RECEIVED, add stock (User requested: "stock only change... when a Purchase is Received")
+      if (data.status === 'RECEIVED') {
         const warehouse = await tx.warehouse.findFirst({
           where: { businessId: user.businessId, isDefault: true }
         }) || await tx.warehouse.create({
@@ -205,6 +205,9 @@ router.get("/invoices/:id", async (req: Request, res: Response) => {
   }
 });
 
+// Helper to check if purchase status impacts stock
+const isPurchaseReceived = (status: string) => status === 'RECEIVED';
+
 // Update Purchase Invoice
 router.put("/invoices/:id", async (req: Request, res: Response) => {
   try {
@@ -213,7 +216,8 @@ router.put("/invoices/:id", async (req: Request, res: Response) => {
     const data = purchaseInvoiceSchema.parse(req.body);
 
     const existing = await prisma.purchaseInvoice.findFirst({
-      where: { id: id as string, businessId: user.businessId }
+      where: { id: id as string, businessId: user.businessId },
+      include: { items: true }
     });
 
     if (!existing) return res.status(404).json({ error: "Purchase Bill not found" });
@@ -231,12 +235,12 @@ router.put("/invoices/:id", async (req: Request, res: Response) => {
     const total = subtotal + taxAmount - data.discount;
 
     const result = await prisma.$transaction(async (tx: any) => {
-      // Delete old items
+      // 1. Delete old items
       await tx.purchaseItem.deleteMany({
         where: { purchaseInvoiceId: id as string }
       });
 
-      // Update bill and create new items
+      // 2. Update bill and create new items
       const updated = await tx.purchaseInvoice.update({
         where: { id: id as string },
         data: {
@@ -257,6 +261,116 @@ router.put("/invoices/:id", async (req: Request, res: Response) => {
         },
         include: { items: true, party: true }
       });
+
+      // 3. Reconcile Stock Entries
+      // Delete old stock entries for this bill
+      await tx.stockEntry.deleteMany({
+        where: { businessId: user.businessId, reference: existing.number }
+      });
+
+      // If new status is RECEIVED, add stock
+      if (isPurchaseReceived(data.status)) {
+        const warehouse = await tx.warehouse.findFirst({
+          where: { businessId: user.businessId, isDefault: true }
+        }) || await tx.warehouse.create({
+            data: { name: "Main", isDefault: true, businessId: user.businessId }
+        });
+
+        for (const item of computedItems) {
+          if (item.productId) {
+            await tx.stockEntry.create({
+              data: {
+                businessId: user.businessId,
+                productId: item.productId,
+                warehouseId: warehouse.id,
+                type: "IN",
+                qty: item.qty,
+                cost: item.unitPrice,
+                reference: updated.number,
+                notes: `Purchased via Bill ${updated.number} (Updated)`
+              }
+            });
+            // Update purchase price in product master
+            await tx.product.update({
+              where: { id: item.productId },
+              data: { purchasePrice: item.unitPrice }
+            });
+          }
+        }
+      }
+
+      return updated;
+    });
+
+    res.json(result);
+  } catch (error: any) {
+    if (error instanceof z.ZodError) return res.status(400).json({ error: (error as any).errors });
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Update Purchase Status
+router.patch("/invoices/:id/status", async (req: Request, res: Response) => {
+  try {
+    const user = req.user as any;
+    const { id } = req.params;
+    const { status } = z.object({ 
+      status: z.enum(["DRAFT", "PENDING", "RECEIVED", "PARTIAL", "PAID", "OVERDUE"]) 
+    }).parse(req.body);
+
+    const existing = await prisma.purchaseInvoice.findFirst({
+      where: { id: id as string, businessId: user.businessId },
+      include: { items: true }
+    });
+
+    if (!existing) return res.status(404).json({ error: "Purchase Bill not found" });
+
+    const result = await prisma.$transaction(async (tx) => {
+      const updated = await tx.purchaseInvoice.update({
+        where: { id: id as string },
+        data: { status },
+        include: { items: true, party: true }
+      });
+
+      // Stock Reconciliation
+      const wasReceived = isPurchaseReceived(existing.status);
+      const isReceived = isPurchaseReceived(status);
+
+      if (!wasReceived && isReceived) {
+        // Add stock entries
+        const warehouse = await tx.warehouse.findFirst({
+          where: { businessId: user.businessId, isDefault: true }
+        }) || await tx.warehouse.create({
+            data: { name: "Main", isDefault: true, businessId: user.businessId }
+        });
+
+        for (const item of updated.items) {
+          if (item.productId) {
+            await tx.stockEntry.create({
+              data: {
+                businessId: user.businessId,
+                productId: item.productId,
+                warehouseId: warehouse.id,
+                type: "IN",
+                qty: item.qty as any,
+                cost: item.unitPrice as any,
+                reference: updated.number,
+                notes: `Purchased via Bill ${updated.number} (Status Change)`
+              }
+            });
+            // Update purchase price in product master
+            await tx.product.update({
+              where: { id: item.productId },
+              data: { purchasePrice: item.unitPrice }
+            });
+          }
+        }
+      } else if (wasReceived && !isReceived) {
+        // Remove stock entries
+        await tx.stockEntry.deleteMany({
+          where: { businessId: user.businessId, reference: updated.number }
+        });
+      }
 
       return updated;
     });

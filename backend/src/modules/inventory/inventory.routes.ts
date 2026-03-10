@@ -73,6 +73,29 @@ router.post("/adjustments", async (req: Request, res: Response) => {
   }
 });
 
+// Get stock history for a specific product
+router.get("/history/:productId", async (req: Request, res: Response) => {
+  try {
+    const user = req.user as any;
+    const productId = req.params.productId as string;
+
+    const history = await prisma.stockEntry.findMany({
+      where: { 
+        businessId: user.businessId,
+        productId 
+      },
+      orderBy: { date: 'desc' },
+      include: {
+        warehouse: { select: { name: true } }
+      }
+    });
+
+    res.json(history);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Get low stock alerts
 router.get("/low-stock", async (req: Request, res: Response) => {
   try {

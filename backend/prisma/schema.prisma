@@ -38,6 +38,7 @@ model Business {
   journalEntries   JournalEntry[]
   expenses         Expense[]
   taxGroups        TaxGroup[]
+  quotations       Quotation[]
 }
 
 model User {
@@ -90,6 +91,7 @@ model Party {
   purchaseInvoices PurchaseInvoice[]
   payments         Payment[]
   journalLines     JournalLine[]
+  quotations       Quotation[]
 }
 
 enum PartyType {
@@ -201,6 +203,9 @@ model Quotation {
   updatedAt  DateTime        @updatedAt
 
   items QuotationItem[]
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  party    Party    @relation(fields: [partyId], references: [id])
 }
 
 enum QuotationStatus {
@@ -342,6 +347,7 @@ model PurchaseInvoice {
 
 enum PurchaseInvoiceStatus {
   DRAFT
+  PENDING
   RECEIVED
   PARTIAL
   PAID

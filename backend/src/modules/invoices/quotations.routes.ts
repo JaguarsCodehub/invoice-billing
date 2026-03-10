@@ -62,7 +62,7 @@ router.post("/", async (req: Request, res: Response) => {
           create: computedItems
         }
       },
-      include: { items: true }
+      include: { items: true, party: true }
     });
 
     res.status(201).json(quotation);
@@ -84,12 +84,117 @@ router.get("/", async (req: Request, res: Response) => {
         ...(status ? { status: status as any } : {}),
         ...(partyId ? { partyId: partyId as string } : {})
       },
-      // Removed include party since it's not directly related in schema unless defined
+      include: {
+        party: { select: { name: true, type: true } }
+      },
       orderBy: { date: "desc" }
     });
 
     res.json(quotations);
   } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get quotation by ID
+router.get("/:id", async (req: Request, res: Response) => {
+  try {
+    const user = req.user as any;
+    const quotation = await prisma.quotation.findFirst({
+      where: { id: req.params.id as string, businessId: user.businessId },
+      include: { 
+        items: true,
+        party: true
+      }
+    });
+
+    if (!quotation) return res.status(404).json({ error: "Quotation not found" });
+    res.json(quotation);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Update quotation
+router.put("/:id", async (req: Request, res: Response) => {
+  try {
+    const user = req.user as any;
+    const { id } = req.params;
+    const data = quotationSchema.parse(req.body);
+
+    const existing = await prisma.quotation.findFirst({
+      where: { id: id as string, businessId: user.businessId }
+    });
+
+    if (!existing) return res.status(404).json({ error: "Quotation not found" });
+
+    let subtotal = 0;
+    let taxAmount = 0;
+
+    const computedItems = data.items.map((item: any) => {
+      const itemTotal = (item.qty * item.unitPrice) - item.discount + item.taxAmount;
+      subtotal += (item.qty * item.unitPrice) - item.discount;
+      taxAmount += item.taxAmount;
+      return { ...item, total: itemTotal };
+    });
+
+    const total = subtotal + taxAmount - data.discount;
+
+    const result = await prisma.$transaction(async (tx: any) => {
+      // Delete old items
+      await tx.quotationItem.deleteMany({
+        where: { quotationId: id as string }
+      });
+
+      // Update quotation and create new items
+      const updated = await tx.quotation.update({
+        where: { id: id as string },
+        data: {
+          partyId: data.partyId,
+          number: data.number,
+          date: new Date(data.date),
+          validUntil: data.validUntil ? new Date(data.validUntil) : undefined,
+          status: data.status as any,
+          subtotal,
+          taxAmount,
+          discount: data.discount,
+          total,
+          notes: data.notes,
+          items: {
+            create: computedItems
+          }
+        },
+        include: { items: true, party: true }
+      });
+
+      return updated;
+    });
+
+    res.json(result);
+  } catch (error: any) {
+    if (error instanceof z.ZodError) return res.status(400).json({ error: (error as any).errors });
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Update Quotation Status
+router.patch("/:id/status", async (req: Request, res: Response) => {
+  try {
+    const user = req.user as any;
+    const { id } = req.params;
+    const { status } = z.object({ 
+      status: z.enum(["DRAFT", "SENT", "ACCEPTED", "REJECTED", "INVOICED"]) 
+    }).parse(req.body);
+
+    const updated = await prisma.quotation.update({
+      where: { id: id as string, businessId: user.businessId },
+      data: { status: status as any },
+      include: { items: true, party: true }
+    });
+
+    res.json(updated);
+  } catch (error: any) {
+    if (error instanceof z.ZodError) return res.status(400).json({ error: (error as any).errors });
     res.status(500).json({ error: error.message });
   }
 });
@@ -105,15 +210,13 @@ router.post("/:id/convert-to-invoice", async (req: Request, res: Response) => {
 
     if (!quote) return res.status(404).json({ error: "Quotation not found" });
 
-    // In a real flow, this just returns the invoice shape for the frontend builder, 
-    // but here we can just create the invoice directly as DRAFT.
     const result = await prisma.$transaction(async (tx) => {
       const invoice = await tx.invoice.create({
          data: {
            businessId: user.businessId,
            partyId: quote.partyId,
            type: "TAX_INVOICE",
-           number: `INV-${quote.number}`, // Just string manipulation for demo
+           number: `INV-${quote.number}`,
            date: new Date(),
            status: "DRAFT",
            subtotal: quote.subtotal,
@@ -138,7 +241,7 @@ router.post("/:id/convert-to-invoice", async (req: Request, res: Response) => {
       
       await tx.quotation.update({
         where: { id: quote.id },
-        data: { status: "ACCEPTED" }
+        data: { status: "INVOICED" }
       });
 
       return invoice;

@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, Search, User, LogOut } from "lucide-react";
+import { Bell, Search, User, LogOut, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -12,21 +12,32 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuthStore } from "@/store/auth";
+import { useUIStore } from "@/store/ui";
 
 export function Header() {
   const { user, clearAuth } = useAuthStore();
+  const { toggleSidebar } = useUIStore();
 
   return (
     <header className="flex h-16 items-center justify-between border-b bg-card px-6">
-      <div className="flex items-center w-full max-w-sm ml-4">
-        {/* We can add a global search (Cmd+K) here later */}
-        <div className="relative w-full">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            type="search"
-            placeholder="Search... (Cmd+K)"
-            className="w-full bg-muted/50 pl-9 border-none focus-visible:ring-1"
-          />
+      <div className="flex items-center gap-4 flex-1">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          onClick={toggleSidebar}
+          className="shrink-0"
+        >
+          <Menu className="h-5 w-5 text-muted-foreground" />
+        </Button>
+        <div className="flex items-center w-full max-w-sm">
+          <div className="relative w-full">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="Search... (Cmd+K)"
+              className="w-full bg-muted/50 pl-9 border-none focus-visible:ring-1 text-sm h-9"
+            />
+          </div>
         </div>
       </div>
       

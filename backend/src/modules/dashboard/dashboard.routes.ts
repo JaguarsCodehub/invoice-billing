@@ -56,7 +56,8 @@ router.get("/", async (req: Request, res: Response) => {
         businessId, 
         status: { notIn: ['DRAFT', 'CANCELLED'] },
         date: { gte: sixMonthsAgo }
-      }
+      },
+      include: { items: true }
     });
 
     const recentPurchases = await prisma.purchaseInvoice.findMany({
@@ -68,7 +69,6 @@ router.get("/", async (req: Request, res: Response) => {
     });
 
     const chartDataMap: Record<string, { month: string; revenue: number; expenses: number }> = {};
-    
     for (let i = 5; i >= 0; i--) {
       const monthStr = dayjs().subtract(i, 'month').format('MMM YYYY');
       chartDataMap[monthStr] = { month: monthStr, revenue: 0, expenses: 0 };
@@ -90,7 +90,47 @@ router.get("/", async (req: Request, res: Response) => {
 
     const chartData = Object.values(chartDataMap);
 
-    // 6. Recent Activity
+    // 6. Weekly Revenue (Last 7 Days)
+    const sevenDaysAgo = dayjs().subtract(6, 'day').startOf('day').toDate();
+    const weeklyDataMap: Record<string, { date: string; revenue: number }> = {};
+    for (let i = 6; i >= 0; i--) {
+      const dateStr = dayjs().subtract(i, 'day').format('DD MMM');
+      weeklyDataMap[dateStr] = { date: dateStr, revenue: 0 };
+    }
+
+    recentInvoices.filter(i => dayjs(i.date).isAfter(sevenDaysAgo)).forEach(inv => {
+      const dateStr = dayjs(inv.date).format('DD MMM');
+      if (weeklyDataMap[dateStr]) {
+        weeklyDataMap[dateStr].revenue += Number(inv.total);
+      }
+    });
+
+    const weeklyRevenue = Object.values(weeklyDataMap);
+
+    // 7. Top Selling Products
+    const productSales: Record<string, { name: string; qty: number; revenue: number }> = {};
+    recentInvoices.forEach(inv => {
+      inv.items.forEach(item => {
+        if (item.productId) {
+          if (!productSales[item.productId]) {
+            productSales[item.productId] = { name: item.description, qty: 0, revenue: 0 };
+          }
+          productSales[item.productId].qty += Number(item.qty);
+          productSales[item.productId].revenue += Number(item.total);
+        }
+      });
+    });
+
+    const topSellingItems = Object.values(productSales)
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 5);
+
+    // 8. Profit Metrics
+    const totalExpenses = recentPurchases.reduce((acc, p) => acc + Number(p.total), 0);
+    const grossProfit = totalRevenue - totalExpenses;
+    const netProfitMargin = totalRevenue > 0 ? (grossProfit / totalRevenue) * 100 : 0;
+
+    // 9. Recent Activity
     const latestInvoices = await prisma.invoice.findMany({
       where: { businessId },
       include: { party: { select: { name: true } } },
@@ -129,6 +169,10 @@ router.get("/", async (req: Request, res: Response) => {
       invoicesThisMonth,
       activeParties,
       chartData,
+      weeklyRevenue,
+      topSellingItems,
+      grossProfit,
+      netProfitMargin,
       recentActivity: combinedActivity
     });
 
