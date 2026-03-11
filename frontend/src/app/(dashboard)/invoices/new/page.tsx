@@ -270,9 +270,9 @@ export default function CreateInvoicePage() {
   const customers = parties?.filter((p: any) => p.type === 'CUSTOMER' || p.type === 'BOTH') || [];
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] overflow-hidden">
+    <div className="flex flex-col h-[calc(100vh-4rem)] overflow-hidden print:h-auto print:overflow-visible print:block">
       {/* Header Bar */}
-      <div className="flex items-center justify-between px-6 py-3 border-b bg-background z-10 shrink-0">
+      <div className="flex items-center justify-between px-6 py-3 border-b bg-background z-10 shrink-0 print:hidden">
         <div className="flex items-center gap-4">
           <Link href="/invoices">
             <Button variant="ghost" size="icon">
@@ -293,7 +293,7 @@ export default function CreateInvoicePage() {
           <Button variant="outline" size="sm">
             <Download className="mr-2 h-4 w-4" /> Download
           </Button>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={() => window.print()}>
             <Printer className="mr-2 h-4 w-4" /> Print
           </Button>
           <Button 
@@ -320,10 +320,10 @@ export default function CreateInvoicePage() {
       </div>
 
       {/* Main Content: Split Pane */}
-      <div className="flex flex-1 overflow-hidden bg-muted/30">
+      <div className="flex flex-1 overflow-hidden bg-muted/30 print:overflow-visible print:bg-white print:block">
         {/* Left Side: Editor */}
         <div className={cn(
-          "overflow-y-auto border-r transition-all duration-300 ease-in-out scrollbar-thin scrollbar-thumb-muted-foreground/20",
+          "overflow-y-auto border-r transition-all duration-300 ease-in-out scrollbar-thin scrollbar-thumb-muted-foreground/20 print:hidden",
           showEditor ? "w-1/2 p-6" : "w-0 p-0 overflow-hidden border-none"
         )}>
           <div className={cn("space-y-6 max-w-3xl mx-auto", !showEditor && "invisible")}>
@@ -553,10 +553,10 @@ export default function CreateInvoicePage() {
 
         {/* Right Side: Preview */}
         <div className={cn(
-          "overflow-y-auto p-4 md:p-8 flex justify-center bg-zinc-200/50 scrollbar-thin scrollbar-thumb-muted-foreground/20 transition-all duration-300",
+          "overflow-y-auto p-4 md:p-8 flex justify-center bg-zinc-200/50 scrollbar-thin scrollbar-thumb-muted-foreground/20 transition-all duration-300 print:overflow-visible print:w-full print:p-0 print:bg-white",
           showEditor ? "w-1/2" : "w-full"
         )}>
-          <div className="relative w-full max-w-[800px] h-fit bg-white shadow-2xl flex flex-col p-6 font-sans text-black border border-zinc-300" style={{ minHeight: '11.23in' }}>
+          <div className="relative w-full max-w-[800px] print:w-[800px] print:max-w-[800px] h-fit bg-white shadow-2xl print:shadow-none flex flex-col p-6 font-sans text-black border border-zinc-300" style={{ minHeight: '11.23in', WebkitPrintColorAdjust: "exact", printColorAdjust: "exact" }}>
             {/* Template Header */}
             <div className="flex border border-black min-h-[100px]">
               <div className="flex-1 p-3 border-r border-black flex flex-col justify-between">
