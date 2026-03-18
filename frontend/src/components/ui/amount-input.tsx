@@ -2,8 +2,7 @@ import * as React from "react"
 import { Input } from "./input"
 import { cn } from "@/lib/utils"
 
-export interface AmountInputProps
-  extends React.ComponentProps<typeof Input> {}
+export type AmountInputProps = React.ComponentProps<typeof Input>
 
 const AmountInput = React.forwardRef<HTMLInputElement, AmountInputProps>(
   ({ className, onFocus, ...props }, ref) => {
