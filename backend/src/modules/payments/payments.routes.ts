@@ -2,6 +2,7 @@ import { Router, Request, Response } from "express";
 import { authenticate } from "../../middleware/auth";
 import prisma from "../../config/db";
 import { z } from "zod";
+import { recordLedgerEntry } from "../../utils/party";
 
 const router = Router();
 router.use(authenticate);
@@ -65,6 +66,17 @@ router.post("/", async (req: Request, res: Response) => {
           }
         }
       }
+
+      await recordLedgerEntry({
+        businessId: user.businessId,
+        partyId: data.partyId,
+        type: "PAYMENT",
+        amount: -data.amount, // Payments reduce outstanding (for customers)
+        reference: payment.reference || `PAY-${payment.id.substring(0, 6).toUpperCase()}`,
+        notes: data.notes || "Payment received",
+        date: new Date(data.date),
+        tx,
+      });
 
       return payment;
     });

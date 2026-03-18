@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { AmountInput } from "@/components/ui/amount-input";
 import { Label } from "@/components/ui/label";
 import { 
   Table, 
@@ -33,6 +34,8 @@ import {
 import { Plus, Search, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
+import { PartyHistorySheet } from "@/components/parties/party-history-sheet";
+import { History } from "lucide-react";
 
 export default function PartiesPage() {
   const queryClient = useQueryClient();
@@ -48,6 +51,9 @@ export default function PartiesPage() {
     phone: "",
     openingBalance: 0
   });
+
+  const [selectedParty, setSelectedParty] = useState<any>(null);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
   const { data: parties, isLoading } = useQuery({
     queryKey: ['parties', typeFilter],
@@ -163,9 +169,8 @@ export default function PartiesPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="openingBalance">Opening Balance</Label>
-                <Input 
+                <AmountInput 
                   id="openingBalance" 
-                  type="number"
                   step="0.01" 
                   value={formData.openingBalance}
                   onChange={(e) => setFormData({...formData, openingBalance: Number(e.target.value)})}
@@ -218,6 +223,7 @@ export default function PartiesPage() {
               <TableHead>Contact</TableHead>
               <TableHead>GSTIN</TableHead>
               <TableHead className="text-right">Balance</TableHead>
+              <TableHead className="w-10"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -251,10 +257,28 @@ export default function PartiesPage() {
                   </TableCell>
                   <TableCell>{party.gstin || "-"}</TableCell>
                   <TableCell className="text-right font-medium">
-                    <span className={Number(party.openingBalance) >= 0 ? "text-green-600" : "text-destructive"}>
-                      ₹{Math.abs(Number(party.openingBalance)).toFixed(2)}
-                      {Number(party.openingBalance) >= 0 ? " Dr" : " Cr"}
-                    </span>
+                    {(() => {
+                      const balance = Number(party.outstanding || 0);
+                      return (
+                        <span className={balance >= 0 ? "text-green-600" : "text-destructive"}>
+                          ₹{Math.abs(balance).toFixed(2)}
+                          {balance >= 0 ? " Dr" : " Cr"}
+                        </span>
+                      );
+                    })()}
+                  </TableCell>
+                  <TableCell>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-8 w-8 text-muted-foreground hover:text-primary"
+                      onClick={() => {
+                        setSelectedParty(party);
+                        setIsHistoryOpen(true);
+                      }}
+                    >
+                      <History className="h-4 w-4" />
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))
@@ -262,6 +286,14 @@ export default function PartiesPage() {
           </TableBody>
         </Table>
       </div>
+      
+      {selectedParty && (
+        <PartyHistorySheet 
+          party={selectedParty} 
+          isOpen={isHistoryOpen} 
+          onOpenChange={setIsHistoryOpen} 
+        />
+      )}
     </div>
   );
 }

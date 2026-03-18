@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { AmountInput } from "@/components/ui/amount-input";
 import { Label } from "@/components/ui/label";
 import { 
   Table, 
@@ -182,9 +183,9 @@ export default function PaymentsPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="amount">Amount (₹) *</Label>
-                  <Input 
+                  <AmountInput 
                     id="amount" 
-                    type="number" step="0.01" required min="0.01"
+                    step="0.01" required min="0.01"
                     value={formData.amount}
                     onChange={(e) => setFormData({...formData, amount: Number(e.target.value)})}
                   />

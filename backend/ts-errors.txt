@@ -1,44 +1,41 @@
-src/modules/accounting/accounting.routes.ts(11,22): error TS2339: Property 'user' does not exist on type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
-src/modules/accounting/accounting.routes.ts(25,22): error TS2339: Property 'user' does not exist on type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
-src/modules/auth/auth.controller.ts(46,22): error TS2339: Property 'user' does not exist on type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
-src/modules/business/business.routes.ts(13,22): error TS2339: Property 'user' does not exist on type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
-src/modules/business/business.routes.ts(29,22): error TS2339: Property 'user' does not exist on type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
-src/modules/dashboard/dashboard.routes.ts(11,22): error TS2339: Property 'user' does not exist on type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
-src/modules/inventory/inventory.routes.ts(12,22): error TS2339: Property 'user' does not exist on type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
-src/modules/inventory/inventory.routes.ts(37,22): error TS2339: Property 'user' does not exist on type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
-src/modules/inventory/inventory.routes.ts(79,22): error TS2339: Property 'user' does not exist on type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
-src/modules/inventory/inventory.routes.ts(102,22): error TS2339: Property 'user' does not exist on type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
-src/modules/invoices/invoices.routes.ts(34,22): error TS2339: Property 'user' does not exist on type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
-src/modules/invoices/invoices.routes.ts(116,22): error TS2339: Property 'user' does not exist on type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
-src/modules/invoices/invoices.routes.ts(140,22): error TS2339: Property 'user' does not exist on type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
-src/modules/invoices/invoices.routes.ts(163,22): error TS2339: Property 'user' does not exist on type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
-src/modules/invoices/invoices.routes.ts(263,22): error TS2339: Property 'user' does not exist on type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
-src/modules/invoices/quotations.routes.ts(33,22): error TS2339: Property 'user' does not exist on type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
-src/modules/invoices/quotations.routes.ts(78,22): error TS2339: Property 'user' does not exist on type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
-src/modules/invoices/quotations.routes.ts(102,22): error TS2339: Property 'user' does not exist on type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
-src/modules/invoices/quotations.routes.ts(121,22): error TS2339: Property 'user' does not exist on type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
-src/modules/invoices/quotations.routes.ts(183,22): error TS2339: Property 'user' does not exist on type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
-src/modules/invoices/quotations.routes.ts(205,22): error TS2339: Property 'user' does not exist on type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
-src/modules/parties/parties.routes.ts(25,22): error TS2339: Property 'user' does not exist on type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
-src/modules/parties/parties.routes.ts(47,22): error TS2339: Property 'user' does not exist on type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
-src/modules/parties/parties.routes.ts(67,22): error TS2339: Property 'user' does not exist on type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
-src/modules/parties/parties.routes.ts(82,22): error TS2339: Property 'user' does not exist on type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
-src/modules/parties/parties.routes.ts(102,22): error TS2339: Property 'user' does not exist on type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
-src/modules/payments/payments.routes.ts(22,22): error TS2339: Property 'user' does not exist on type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
-src/modules/payments/payments.routes.ts(82,22): error TS2339: Property 'user' does not exist on type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
-src/modules/products/products.routes.ts(25,22): error TS2339: Property 'user' does not exist on type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
-src/modules/products/products.routes.ts(47,22): error TS2339: Property 'user' does not exist on type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
-src/modules/products/products.routes.ts(96,22): error TS2339: Property 'user' does not exist on type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
-src/modules/products/products.routes.ts(112,22): error TS2339: Property 'user' does not exist on type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
-src/modules/products/products.routes.ts(132,22): error TS2339: Property 'user' does not exist on type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
-src/modules/purchases/purchases.routes.ts(43,22): error TS2339: Property 'user' does not exist on type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
-src/modules/purchases/purchases.routes.ts(86,22): error TS2339: Property 'user' does not exist on type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
-src/modules/purchases/purchases.routes.ts(168,22): error TS2339: Property 'user' does not exist on type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
-src/modules/purchases/purchases.routes.ts(192,22): error TS2339: Property 'user' does not exist on type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
-src/modules/purchases/purchases.routes.ts(214,22): error TS2339: Property 'user' does not exist on type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
-src/modules/purchases/purchases.routes.ts(315,22): error TS2339: Property 'user' does not exist on type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
-src/modules/reports/reports.routes.ts(12,22): error TS2339: Property 'user' does not exist on type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
-src/modules/reports/reports.routes.ts(46,22): error TS2339: Property 'user' does not exist on type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
-src/modules/reports/reports.routes.ts(78,22): error TS2339: Property 'user' does not exist on type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
-src/modules/taxes/taxes.routes.ts(12,22): error TS2339: Property 'user' does not exist on type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
-src/modules/taxes/taxes.routes.ts(41,22): error TS2339: Property 'user' does not exist on type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
+src/index.ts(16,24): error TS2307: Cannot find module './modules/auth/auth.routes' or its corresponding type declarations.
+src/index.ts(17,28): error TS2307: Cannot find module './modules/business/business.routes' or its corresponding type declarations.
+src/index.ts(18,27): error TS2307: Cannot find module './modules/parties/parties.routes' or its corresponding type declarations.
+src/index.ts(19,28): error TS2307: Cannot find module './modules/products/products.routes' or its corresponding type declarations.
+src/index.ts(20,29): error TS2307: Cannot find module './modules/inventory/inventory.routes' or its corresponding type declarations.
+src/index.ts(21,28): error TS2307: Cannot find module './modules/invoices/invoices.routes' or its corresponding type declarations.
+src/index.ts(22,30): error TS2307: Cannot find module './modules/invoices/quotations.routes' or its corresponding type declarations.
+src/index.ts(23,29): error TS2307: Cannot find module './modules/purchases/purchases.routes' or its corresponding type declarations.
+src/index.ts(24,28): error TS2307: Cannot find module './modules/payments/payments.routes' or its corresponding type declarations.
+src/index.ts(25,27): error TS2307: Cannot find module './modules/reports/reports.routes' or its corresponding type declarations.
+src/index.ts(26,25): error TS2307: Cannot find module './modules/taxes/taxes.routes' or its corresponding type declarations.
+src/index.ts(27,30): error TS2307: Cannot find module './modules/accounting/accounting.routes' or its corresponding type declarations.
+src/index.ts(28,29): error TS2307: Cannot find module './modules/dashboard/dashboard.routes' or its corresponding type declarations.
+src/modules/accounting/accounting.routes.ts(2,30): error TS2835: Relative import paths need explicit file extensions in ECMAScript imports when '--moduleResolution' is 'node16' or 'nodenext'. Did you mean '../../middleware/auth.js'?
+src/modules/accounting/accounting.routes.ts(3,20): error TS2835: Relative import paths need explicit file extensions in ECMAScript imports when '--moduleResolution' is 'node16' or 'nodenext'. Did you mean '../../config/db.js'?
+src/modules/auth/auth.controller.ts(3,30): error TS2307: Cannot find module './auth.service' or its corresponding type declarations.
+src/modules/auth/auth.routes.ts(2,37): error TS2307: Cannot find module './auth.controller' or its corresponding type declarations.
+src/modules/auth/auth.routes.ts(3,30): error TS2835: Relative import paths need explicit file extensions in ECMAScript imports when '--moduleResolution' is 'node16' or 'nodenext'. Did you mean '../../middleware/auth.js'?
+src/modules/auth/auth.service.ts(3,20): error TS2835: Relative import paths need explicit file extensions in ECMAScript imports when '--moduleResolution' is 'node16' or 'nodenext'. Did you mean '../../config/db.js'?
+src/modules/business/business.routes.ts(2,30): error TS2835: Relative import paths need explicit file extensions in ECMAScript imports when '--moduleResolution' is 'node16' or 'nodenext'. Did you mean '../../middleware/auth.js'?
+src/modules/business/business.routes.ts(3,20): error TS2835: Relative import paths need explicit file extensions in ECMAScript imports when '--moduleResolution' is 'node16' or 'nodenext'. Did you mean '../../config/db.js'?
+src/modules/dashboard/dashboard.routes.ts(2,30): error TS2835: Relative import paths need explicit file extensions in ECMAScript imports when '--moduleResolution' is 'node16' or 'nodenext'. Did you mean '../../middleware/auth.js'?
+src/modules/dashboard/dashboard.routes.ts(3,20): error TS2835: Relative import paths need explicit file extensions in ECMAScript imports when '--moduleResolution' is 'node16' or 'nodenext'. Did you mean '../../config/db.js'?
+src/modules/inventory/inventory.routes.ts(2,30): error TS2835: Relative import paths need explicit file extensions in ECMAScript imports when '--moduleResolution' is 'node16' or 'nodenext'. Did you mean '../../middleware/auth.js'?
+src/modules/inventory/inventory.routes.ts(3,20): error TS2835: Relative import paths need explicit file extensions in ECMAScript imports when '--moduleResolution' is 'node16' or 'nodenext'. Did you mean '../../config/db.js'?
+src/modules/invoices/invoices.routes.ts(2,30): error TS2835: Relative import paths need explicit file extensions in ECMAScript imports when '--moduleResolution' is 'node16' or 'nodenext'. Did you mean '../../middleware/auth.js'?
+src/modules/invoices/invoices.routes.ts(3,20): error TS2835: Relative import paths need explicit file extensions in ECMAScript imports when '--moduleResolution' is 'node16' or 'nodenext'. Did you mean '../../config/db.js'?
+src/modules/invoices/quotations.routes.ts(2,30): error TS2835: Relative import paths need explicit file extensions in ECMAScript imports when '--moduleResolution' is 'node16' or 'nodenext'. Did you mean '../../middleware/auth.js'?
+src/modules/invoices/quotations.routes.ts(3,20): error TS2835: Relative import paths need explicit file extensions in ECMAScript imports when '--moduleResolution' is 'node16' or 'nodenext'. Did you mean '../../config/db.js'?
+src/modules/parties/parties.routes.ts(2,30): error TS2835: Relative import paths need explicit file extensions in ECMAScript imports when '--moduleResolution' is 'node16' or 'nodenext'. Did you mean '../../middleware/auth.js'?
+src/modules/parties/parties.routes.ts(3,20): error TS2835: Relative import paths need explicit file extensions in ECMAScript imports when '--moduleResolution' is 'node16' or 'nodenext'. Did you mean '../../config/db.js'?
+src/modules/payments/payments.routes.ts(2,30): error TS2835: Relative import paths need explicit file extensions in ECMAScript imports when '--moduleResolution' is 'node16' or 'nodenext'. Did you mean '../../middleware/auth.js'?
+src/modules/payments/payments.routes.ts(3,20): error TS2835: Relative import paths need explicit file extensions in ECMAScript imports when '--moduleResolution' is 'node16' or 'nodenext'. Did you mean '../../config/db.js'?
+src/modules/products/products.routes.ts(2,30): error TS2835: Relative import paths need explicit file extensions in ECMAScript imports when '--moduleResolution' is 'node16' or 'nodenext'. Did you mean '../../middleware/auth.js'?
+src/modules/products/products.routes.ts(3,20): error TS2835: Relative import paths need explicit file extensions in ECMAScript imports when '--moduleResolution' is 'node16' or 'nodenext'. Did you mean '../../config/db.js'?
+src/modules/purchases/purchases.routes.ts(2,30): error TS2835: Relative import paths need explicit file extensions in ECMAScript imports when '--moduleResolution' is 'node16' or 'nodenext'. Did you mean '../../middleware/auth.js'?
+src/modules/purchases/purchases.routes.ts(3,20): error TS2835: Relative import paths need explicit file extensions in ECMAScript imports when '--moduleResolution' is 'node16' or 'nodenext'. Did you mean '../../config/db.js'?
+src/modules/reports/reports.routes.ts(2,30): error TS2835: Relative import paths need explicit file extensions in ECMAScript imports when '--moduleResolution' is 'node16' or 'nodenext'. Did you mean '../../middleware/auth.js'?
+src/modules/reports/reports.routes.ts(3,20): error TS2835: Relative import paths need explicit file extensions in ECMAScript imports when '--moduleResolution' is 'node16' or 'nodenext'. Did you mean '../../config/db.js'?
+src/modules/taxes/taxes.routes.ts(2,30): error TS2835: Relative import paths need explicit file extensions in ECMAScript imports when '--moduleResolution' is 'node16' or 'nodenext'. Did you mean '../../middleware/auth.js'?
+src/modules/taxes/taxes.routes.ts(3,20): error TS2835: Relative import paths need explicit file extensions in ECMAScript imports when '--moduleResolution' is 'node16' or 'nodenext'. Did you mean '../../config/db.js'?

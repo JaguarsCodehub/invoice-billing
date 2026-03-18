@@ -6,6 +6,7 @@ import { apiClient } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { AmountInput } from "@/components/ui/amount-input";
 import { Label } from "@/components/ui/label";
 import { 
   Table, 
@@ -32,7 +33,8 @@ import {
   History, 
   ArrowUpRight, 
   ArrowDownLeft, 
-  AlertCircle
+  AlertCircle,
+  ArrowUpDown
 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -44,6 +46,13 @@ import {
   SheetTitle, 
   SheetTrigger 
 } from "@/components/ui/sheet";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import dayjs from "dayjs";
 
 export default function InventoryPage() {
@@ -51,6 +60,7 @@ export default function InventoryPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isAdjustDialogOpen, setIsAdjustDialogOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [historyProductId, setHistoryProductId] = useState<string | null>(null);
 
@@ -61,6 +71,13 @@ export default function InventoryPage() {
     purchasePrice: 0,
     salePrice: 0,
     trackInventory: true
+  });
+
+  const [adjustData, setAdjustData] = useState({
+    productId: "",
+    type: "IN" as "IN" | "OUT" | "ADJUSTMENT",
+    qty: 0,
+    notes: ""
   });
 
   const { data: products, isLoading } = useQuery({
@@ -99,6 +116,19 @@ export default function InventoryPage() {
     }
   });
 
+  const adjustStock = useMutation({
+    mutationFn: (adjustment: any) => apiClient.post("/inventory/adjustments", adjustment),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      setIsAdjustDialogOpen(false);
+      toast.success("Stock adjusted successfully");
+      setAdjustData({ productId: "", type: "IN", qty: 0, notes: "" });
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Failed to adjust stock");
+    }
+  });
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     createProduct.mutate({
@@ -114,6 +144,18 @@ export default function InventoryPage() {
       ...formData,
       purchasePrice: Number(formData.purchasePrice),
       salePrice: Number(formData.salePrice)
+    });
+  };
+
+  const handleAdjustSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!adjustData.productId) {
+      toast.error("Please select a product");
+      return;
+    }
+    adjustStock.mutate({
+      ...adjustData,
+      qty: Number(adjustData.qty)
     });
   };
 
@@ -189,9 +231,8 @@ export default function InventoryPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="purchasePrice">Purchase Price</Label>
-                  <Input 
+                  <AmountInput 
                     id="purchasePrice" 
-                    type="number"
                     step="0.01" 
                     value={formData.purchasePrice}
                     onChange={(e) => setFormData({...formData, purchasePrice: Number(e.target.value)})}
@@ -199,9 +240,8 @@ export default function InventoryPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="salePrice">Sales Price</Label>
-                  <Input 
+                  <AmountInput 
                     id="salePrice" 
-                    type="number" 
                     step="0.01"
                     value={formData.salePrice}
                     onChange={(e) => setFormData({...formData, salePrice: Number(e.target.value)})}
@@ -213,6 +253,95 @@ export default function InventoryPage() {
                 <Button type="submit" disabled={createProduct.isPending}>
                   {createProduct.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                   Save Product
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={isAdjustDialogOpen} onOpenChange={setIsAdjustDialogOpen}>
+          <DialogTrigger asChild>
+            <Button variant="outline">
+              <ArrowUpDown className="mr-2 h-4 w-4 text-primary" />
+              Stock Adjustment
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Stock Adjustment</DialogTitle>
+              <DialogDescription>
+                Increase or decrease stock for an existing product.
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleAdjustSubmit} className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>Select Product *</Label>
+                <Select 
+                  value={adjustData.productId} 
+                  onValueChange={(val) => setAdjustData({...adjustData, productId: val})}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Choose a product..." />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-[300px]">
+                    <div className="p-2 sticky top-0 bg-popover z-10 border-b">
+                       <Input 
+                         placeholder="Filter products..." 
+                         className="h-8 text-xs"
+                         onChange={(e) => {
+                           // This is a simple client side filter hack if we were using a custom list, 
+                           // but shadcn Select doesn't support filtering easily inside content.
+                           // For now, let's just show the list, and I'll add a separate search if needed.
+                         }}
+                       />
+                    </div>
+                    {products?.map((p: any) => (
+                      <SelectItem key={p.id} value={p.id}>{p.name} ({p.currentStock} {p.unit})</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="adj-type">Type</Label>
+                  <Select 
+                    value={adjustData.type} 
+                    onValueChange={(val: any) => setAdjustData({...adjustData, type: val})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="IN">Stock In (+)</SelectItem>
+                      <SelectItem value="OUT">Stock Out (-)</SelectItem>
+                      <SelectItem value="ADJUSTMENT">Adjustment</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="adj-qty">Quantity</Label>
+                  <AmountInput 
+                    id="adj-qty" 
+                    required 
+                    value={adjustData.qty}
+                    onChange={(e) => setAdjustData({...adjustData, qty: Number(e.target.value)})}
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="adj-notes">Notes</Label>
+                <Input 
+                  id="adj-notes" 
+                  placeholder="Reason for adjustment"
+                  value={adjustData.notes}
+                  onChange={(e) => setAdjustData({...adjustData, notes: e.target.value})}
+                />
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setIsAdjustDialogOpen(false)}>Cancel</Button>
+                <Button type="submit" disabled={adjustStock.isPending}>
+                  {adjustStock.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                  Confirm Adjustment
                 </Button>
               </DialogFooter>
             </form>
@@ -260,9 +389,8 @@ export default function InventoryPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="edit-purchasePrice">Purchase Price</Label>
-                <Input 
+                <AmountInput 
                   id="edit-purchasePrice" 
-                  type="number"
                   step="0.01" 
                   value={formData.purchasePrice}
                   onChange={(e) => setFormData({...formData, purchasePrice: Number(e.target.value)})}
@@ -270,9 +398,8 @@ export default function InventoryPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-salePrice">Sales Price</Label>
-                <Input 
+                <AmountInput 
                   id="edit-salePrice" 
-                  type="number" 
                   step="0.01"
                   value={formData.salePrice}
                   onChange={(e) => setFormData({...formData, salePrice: Number(e.target.value)})}

@@ -2,6 +2,7 @@ import { Router, Request, Response } from "express";
 import { authenticate } from "../../middleware/auth";
 import prisma from "../../config/db";
 import { z } from "zod";
+import { updatePartyOutstanding } from "../../utils/party";
 
 const router = Router();
 router.use(authenticate);
@@ -152,6 +153,8 @@ router.post("/invoices", async (req: Request, res: Response) => {
         }
       }
 
+      await updatePartyOutstanding(data.partyId, tx);
+
       return bill;
     });
 
@@ -299,6 +302,8 @@ router.put("/invoices/:id", async (req: Request, res: Response) => {
         }
       }
 
+      await updatePartyOutstanding(data.partyId, tx);
+
       return updated;
     });
 
@@ -371,6 +376,8 @@ router.patch("/invoices/:id/status", async (req: Request, res: Response) => {
           where: { businessId: user.businessId, reference: updated.number }
         });
       }
+
+      await updatePartyOutstanding(updated.partyId, tx);
 
       return updated;
     });

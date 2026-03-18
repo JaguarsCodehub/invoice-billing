@@ -2,6 +2,7 @@ import { Router, Request, Response } from "express";
 import { authenticate } from "../../middleware/auth";
 import prisma from "../../config/db";
 import { z } from "zod";
+import { recordLedgerEntry } from "../../utils/party";
 
 const router = Router();
 router.use(authenticate);
@@ -96,6 +97,30 @@ router.post("/", async (req: Request, res: Response) => {
             });
           }
         }
+      }
+
+      // Record invoice in ledger if it's a TAX_INVOICE and beyond DRAFT
+      if (data.type === 'TAX_INVOICE' && isInvoiceAccepted(data.status)) {
+        await recordLedgerEntry({
+          businessId: user.businessId,
+          partyId: data.partyId,
+          type: "INVOICE",
+          amount: total,
+          reference: invoice.number,
+          notes: `Invoice generated`,
+          date: new Date(data.date),
+          tx,
+        });
+      } else {
+        // Just update outstanding if no ledger entry needed (e.g. DRAFT)
+        await recordLedgerEntry({
+            businessId: user.businessId,
+            partyId: data.partyId,
+            type: "ADJUSTMENT", // We use ADJUSTMENT with 0 amount to just trigger balance sync if needed
+            amount: 0,
+            notes: "Balance sync",
+            tx
+        });
       }
 
       return invoice;
@@ -245,6 +270,33 @@ router.put("/:id", async (req: Request, res: Response) => {
         }
       }
 
+      // Clean up old ledger entries for this invoice number and re-record
+      await tx.partyLedger.deleteMany({
+        where: { businessId: user.businessId, reference: updated.number }
+      });
+
+      if (data.type === 'TAX_INVOICE' && isInvoiceAccepted(data.status)) {
+        await recordLedgerEntry({
+          businessId: user.businessId,
+          partyId: data.partyId,
+          type: "INVOICE",
+          amount: total,
+          reference: updated.number,
+          notes: `Invoice updated`,
+          date: new Date(data.date),
+          tx,
+        });
+      } else {
+        await recordLedgerEntry({
+            businessId: user.businessId,
+            partyId: data.partyId,
+            type: "ADJUSTMENT",
+            amount: 0,
+            notes: "Balance sync (Update)",
+            tx
+        });
+      }
+
       return updated;
     });
 
@@ -314,6 +366,33 @@ router.patch("/:id/status", async (req: Request, res: Response) => {
             where: { businessId: user.businessId, reference: updated.number }
           });
         }
+      }
+
+      // Update Ledger for status change
+      await tx.partyLedger.deleteMany({
+        where: { businessId: user.businessId, reference: updated.number }
+      });
+
+      if (updated.type === 'TAX_INVOICE' && isInvoiceAccepted(status)) {
+        await recordLedgerEntry({
+          businessId: user.businessId,
+          partyId: updated.partyId,
+          type: "INVOICE",
+          amount: Number(updated.total),
+          reference: updated.number,
+          notes: `Invoice status: ${status}`,
+          date: updated.date,
+          tx,
+        });
+      } else {
+          await recordLedgerEntry({
+              businessId: user.businessId,
+              partyId: updated.partyId,
+              type: "ADJUSTMENT",
+              amount: 0,
+              notes: `Invoice status changed to ${status}`,
+              tx,
+          });
       }
 
       return updated;

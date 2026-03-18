@@ -32,7 +32,7 @@ router.patch("/", async (req: Request, res: Response) => {
       return res.status(403).json({ error: "Forbidden" });
     }
 
-    const { name, gstin, address, currency, timezone, taxConfig } = req.body;
+    const { name, gstin, address, pincode, phone, email, currency, timezone, taxConfig } = req.body;
 
     const business = await prisma.business.update({
       where: { id: user.businessId },
@@ -40,6 +40,9 @@ router.patch("/", async (req: Request, res: Response) => {
         ...(name && { name }),
         ...(gstin !== undefined && { gstin }),
         ...(address !== undefined && { address }),
+        ...(pincode !== undefined && { pincode }),
+        ...(phone !== undefined && { phone }),
+        ...(email !== undefined && { email }),
         ...(currency && { currency }),
         ...(timezone && { timezone }),
         ...(taxConfig && { taxConfig }),

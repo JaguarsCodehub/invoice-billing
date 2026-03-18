@@ -21,6 +21,9 @@ model Business {
   logoUrl   String?
   currency  String   @default("INR")
   timezone  String   @default("Asia/Kolkata")
+  pincode   String?
+  phone     String?
+  email     String?
   taxConfig Json?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -39,6 +42,7 @@ model Business {
   expenses         Expense[]
   taxGroups        TaxGroup[]
   quotations       Quotation[]
+  partyLedger      PartyLedger[]
 }
 
 model User {
@@ -82,6 +86,7 @@ model Party {
   creditLimit    Decimal?  @db.Decimal(12, 2)
   paymentTerms   String?
   openingBalance Decimal   @default(0) @db.Decimal(12, 2)
+  outstanding    Decimal   @default(0) @db.Decimal(12, 2)
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
@@ -92,6 +97,31 @@ model Party {
   payments         Payment[]
   journalLines     JournalLine[]
   quotations       Quotation[]
+  ledger           PartyLedger[]
+}
+
+model PartyLedger {
+  id         String          @id @default(uuid())
+  businessId String
+  partyId    String
+  date       DateTime        @default(now())
+  type       LedgerEntryType
+  amount     Decimal         @db.Decimal(12, 2)
+  balance    Decimal         @db.Decimal(12, 2) // Running balance after this entry
+  reference  String? // Invoice #, Payment ID, etc.
+  notes      String?
+  createdAt  DateTime        @default(now())
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  party    Party    @relation(fields: [partyId], references: [id], onDelete: Cascade)
+}
+
+enum LedgerEntryType {
+  INVOICE
+  PAYMENT
+  REFUND
+  ADJUSTMENT
+  OPENING_BALANCE
 }
 
 enum PartyType {

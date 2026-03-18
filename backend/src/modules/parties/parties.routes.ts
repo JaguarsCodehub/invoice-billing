@@ -2,6 +2,7 @@ import { Router, Request, Response } from "express";
 import { authenticate } from "../../middleware/auth";
 import prisma from "../../config/db";
 import { z } from "zod";
+import { recordLedgerEntry } from "../../utils/party";
 
 const router = Router();
 router.use(authenticate);
@@ -25,11 +26,26 @@ router.post("/", async (req: Request, res: Response) => {
     const user = req.user as any;
     const data = partySchema.parse(req.body);
 
-    const party = await prisma.party.create({
-      data: {
-        ...data,
+    const party = await prisma.$transaction(async (tx) => {
+      const p = await tx.party.create({
+        data: {
+          ...data,
+          businessId: user.businessId,
+          // outstanding will be updated by recordLedgerEntry
+        }
+      });
+
+      // Create initial ledger entry
+      await recordLedgerEntry({
         businessId: user.businessId,
-      }
+        partyId: p.id,
+        type: "OPENING_BALANCE",
+        amount: data.openingBalance,
+        notes: "Initial balance",
+        tx,
+      });
+
+      return p;
     });
     
     res.status(201).json(party);
@@ -106,6 +122,24 @@ router.delete("/:id", async (req: Request, res: Response) => {
     res.json({ message: "Party deleted successfully" });
   } catch (error: any) {
     res.status(500).json({ error: "Cannot delete party with existing transactions" });
+  }
+});
+
+// Get party history (ledger)
+router.get("/:id/history", async (req: Request, res: Response) => {
+  try {
+    const user = req.user as any;
+    const history = await prisma.partyLedger.findMany({
+      where: { 
+        partyId: req.params.id as string, 
+        businessId: user.businessId 
+      },
+      orderBy: { createdAt: "desc" }
+    });
+    
+    res.json(history);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
   }
 });
 

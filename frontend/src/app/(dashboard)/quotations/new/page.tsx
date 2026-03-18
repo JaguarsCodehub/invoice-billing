@@ -6,6 +6,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { AmountInput } from "@/components/ui/amount-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
@@ -382,22 +383,22 @@ export default function CreateQuotationPage() {
                         </div>
                         <div className="space-y-1">
                           <Label className="text-[10px] uppercase font-bold text-muted-foreground">Quantity</Label>
-                          <Input type="number" className="h-7 text-xs" value={item.qty} onChange={(e) => handleItemChange(index, 'qty', e.target.value)} />
+                          <AmountInput className="h-7 text-xs" value={item.qty} onChange={(e) => handleItemChange(index, 'qty', e.target.value)} />
                         </div>
                         <div className="space-y-1">
                           <Label className="text-[10px] uppercase font-bold text-muted-foreground">Unit Price</Label>
-                          <Input type="number" className="h-7 text-xs" value={item.unitPrice} onChange={(e) => handleItemChange(index, 'unitPrice', e.target.value)} />
+                          <AmountInput className="h-7 text-xs" value={item.unitPrice} onChange={(e) => handleItemChange(index, 'unitPrice', e.target.value)} />
                         </div>
                       </div>
 
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1">
                           <Label className="text-[10px] uppercase font-bold text-muted-foreground">Discount (%)</Label>
-                          <Input type="number" className="h-7 text-xs" value={item.discountPercent} onChange={(e) => handleItemChange(index, 'discountPercent', Number(e.target.value))} />
+                          <AmountInput className="h-7 text-xs" value={item.discountPercent} onChange={(e) => handleItemChange(index, 'discountPercent', Number(e.target.value))} />
                         </div>
                         <div className="space-y-1">
                           <Label className="text-[10px] uppercase font-bold text-muted-foreground">Discount (Amt)</Label>
-                          <Input type="number" className="h-7 text-xs" value={item.discount} onChange={(e) => handleItemChange(index, 'discount', Number(e.target.value))} />
+                          <AmountInput className="h-7 text-xs" value={item.discount} onChange={(e) => handleItemChange(index, 'discount', Number(e.target.value))} />
                         </div>
                       </div>
 
@@ -489,7 +490,10 @@ export default function CreateQuotationPage() {
               <div className="flex-1 p-3 border-r border-black flex flex-col justify-between">
                 <div>
                   <h2 className="text-xl font-bold uppercase leading-tight line-clamp-1">{business?.name || "COMPANY NAME"}</h2>
-                  <p className="text-[11px] mt-0.5 leading-tight line-clamp-2">{business?.address || "Address details would go here."}</p>
+                  <p className="text-[11px] mt-0.5 leading-tight line-clamp-2">
+                    {business?.address || "Address details would go here."}
+                    {business?.pincode ? ` - ${business.pincode}` : ""}
+                  </p>
                 </div>
                 <div className="flex flex-wrap gap-x-4 gap-y-1 mt-auto text-[10px]">
                   <p><span className="font-semibold">Phone No.:</span> {business?.phone || ""}</p>
